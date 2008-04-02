@@ -14,12 +14,21 @@ namespace Coriander.SpokenText
     /// <summary>
     /// 
     /// </summary>
+    /// <remarks>
+    /// TODO, 2008-04-02: Does not handle errors returned from SpokenText yet. 
+    /// These are returned as html with status 200. We'll need to parse responses to 
+    /// see what the error message contains. 
+    /// Also, there may be a redirect happening to show the error screen.
+    /// 
+    /// TODO, 2008-04-02 : Create way of preserving login in a session.
+    /// Also add instance members.
+    /// </remarks>
     public class SpokenTextClient
     {
-        const String ServiceUrl = "http://www.spokentext.net/s_record_file_eng.php";
-        const String RecordServiceUrl = "http://www.spokentext.net/s_record_file.php";
-        const String RecordByEnteredTextServiceUrl = "http://www.spokentext.net/s_record_entered_text_eng.php";
-        const String LoginUrl = "http://www.spokentext.net/login_eng.php";
+        const String ServiceUrl         = "http://www.spokentext.net/s_record_file_eng.php";
+        const String RecordServiceUrl   = "http://www.spokentext.net/s_record_file.php";
+        const String RecordEnteredTextServiceUrl = "http://www.spokentext.net/s_record_entered_text_eng.php";
+        const String LoginUrl           = "http://www.spokentext.net/login_eng.php";
 
         /// <summary>
         /// Creates RestCommand for POST operations. Most operations share a bunch of RestParameters.
@@ -32,8 +41,9 @@ namespace Coriander.SpokenText
             CookieCollection cookies
         ) 
         {
-            RestCommand command               = new RestCommand(url, RestTransport.Post);
-            command.Transport.HttpContentType = HttpContentType.MultipartFormData;
+            RestCommand command                 = new RestCommand(url, RestTransport.Post);
+            command.Transport.HttpContentType   = HttpContentType.MultipartFormData;
+            command.RedirectionPolicy           = new RestRedirectionPolicy(1);
 
             command.Parameters.Add("voice",         options.Voice);
             command.Parameters.Add("wpm",           options.Wpm.ToString());
@@ -128,7 +138,7 @@ namespace Coriander.SpokenText
                 );
 
             RestCommand command = CreatePostCommand(
-                RecordByEnteredTextServiceUrl, 
+                RecordEnteredTextServiceUrl, 
                 options,
                 cookies
             );
@@ -136,10 +146,18 @@ namespace Coriander.SpokenText
             command.Parameters.Add("recordingNameEnteredText", name);  
             command.Parameters.Add("text", text);
 
-            // Ignore redirect, just takes us to view recordings.
-            command.AllowAutoRedirect = false; 
-
-            command.Execute();
+            // We should be redirected to the list of recordings.
+            using (StreamReader rdr = command.ExecuteStreamReader())
+            { 
+#if DEBUG
+                Console.WriteLine("DEBUG: Response from RecordText invocation."); 
+ 
+                while (rdr.Peek() > -1)
+                {
+                    Console.WriteLine(rdr.ReadLine());  
+                }
+#endif
+            }
         }
 
 
