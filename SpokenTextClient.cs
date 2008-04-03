@@ -92,6 +92,10 @@ namespace Coriander.SpokenText
             CookieCollection cookies
         ) 
         {
+            throw new NotImplementedException(
+                "Implementation succeeds but does not produce a recording."
+            ); 
+
             if (null == file)
                 throw new ArgumentNullException("file");
 
